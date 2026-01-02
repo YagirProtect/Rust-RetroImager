@@ -1,0 +1,11 @@
+﻿pub mod c_app;
+pub mod c_dithered_image;
+pub mod c_ok_dialog;
+pub mod t_widget;
+pub mod c_top_panel;
+pub mod c_color_box;
+pub mod c_rgb16;
+mod c_config;
+mod c_config_window;
+mod c_palette_menu;
+mod c_change_color_window;
