@@ -179,28 +179,23 @@ impl App {
         let (w, h) = self.dithered_image.size();
         let bytes: &[u8] = self.dithered_image.get_bytes();
 
-        // проверка, чтобы не сохранить мусор
         if bytes.len() != w * h * 4 {
             eprintln!("Bad buffer size: {} != {}", bytes.len(), w * h * 4);
             return;
         }
 
-        // 1) диалог сохранения
         let Some(mut path) = rfd::FileDialog::new()
             .set_file_name("dithered.png")
             .add_filter("PNG Image", &["png"])
             .save_file()
         else {
-            return; // отмена
+            return;
         };
 
-        // 2) если юзер не написал расширение — добавим .png
         if path.extension().is_none() {
             path.set_extension("png");
         }
 
-        // 3) сохраняем PNG через image
-        // image::RgbaImage::from_raw забирает Vec<u8>, поэтому копируем bytes
         let buf = bytes.to_vec();
 
         let Some(img) = image::RgbaImage::from_raw(w as u32, h as u32, buf) else {
@@ -210,8 +205,6 @@ impl App {
 
         if let Err(e) = img.save_with_format(&path, image::ImageFormat::Png) {
             eprintln!("Save failed: {e}");
-            // если хочешь — покажи свой OkDialog
-            // self.ok_dialog.open_dialog("Ошибка", "OK", &format!("Не удалось сохранить:\n{e}"));
             return;
         }
     }
@@ -224,7 +217,6 @@ impl App {
 
         match image::open(&path) {
             Ok(img) => {
-                // тут делай что тебе надо: сохранить оригинал, пересчитать, обновить texture и т.д.
                 self.dithered_image.upload_image(&path, ctx, &self.config, true);
             }
             Err(e) => {

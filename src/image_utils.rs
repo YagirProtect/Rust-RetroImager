@@ -69,7 +69,7 @@ pub fn median_cut_palette(mut samples: Vec<Rgb16>, k: usize) -> Vec<Rgb16> {
 
 
 pub fn u16_to_u8(v: u16) -> u8 {
-    ((v as u32 + 128) / 257) as u8   // без overflow
+    ((v as u32 + 128) / 257) as u8   // check1 overflow
 }
 
 pub fn nearest_palette_color(c: Rgb16, palette: &[Rgb16]) -> Rgb16 {
@@ -95,7 +95,6 @@ pub fn clamp_u16_i32(v: i32) -> u16 {
 
 
 
-/// src16 RGBA16 -> dst8 RGBA8 (палитра по RGB, альфа из оригинала)
 pub fn dither_fs_palette_rgba16_to_rgba8(
     src16: &[u16],
     dst8: &mut Vec<u8>,
@@ -106,7 +105,6 @@ pub fn dither_fs_palette_rgba16_to_rgba8(
     assert_eq!(src16.len(), w * h * 4);
     dst8.resize(w * h * 4, 0);
 
-    // ошибки для текущей строки и следующей (по 3 каналам)
     let mut er0 = vec![0i32; w + 2];
     let mut eg0 = vec![0i32; w + 2];
     let mut eb0 = vec![0i32; w + 2];
@@ -115,7 +113,6 @@ pub fn dither_fs_palette_rgba16_to_rgba8(
     let mut eb1 = vec![0i32; w + 2];
 
     for y in 0..h {
-        // следующая строка ошибок обнуляется
         er1.fill(0); eg1.fill(0); eb1.fill(0);
 
         for x in 0..w {
@@ -129,18 +126,16 @@ pub fn dither_fs_palette_rgba16_to_rgba8(
             let cur = Rgb16 { r, g, b };
             let q = nearest_palette_color(cur, palette);
 
-            // пишем квантованный цвет (u8 для egui)
             dst8[p]     = u16_to_u8(q.r);
             dst8[p + 1] = u16_to_u8(q.g);
             dst8[p + 2] = u16_to_u8(q.b);
             dst8[p + 3] = u16_to_u8(a);
 
-            // ошибка (в u16 пространстве)
             let err_r = cur.r as i32 - q.r as i32;
             let err_g = cur.g as i32 - q.g as i32;
             let err_b = cur.b as i32 - q.b as i32;
 
-            // Floyd–Steinberg weights (делим на 16)
+            // Floyd–Steinberg weights (divide on 16)
             // right: 7/16
             if x + 1 < w {
                 er0[x + 1] += (err_r * 7) / 16;
@@ -167,7 +162,7 @@ pub fn dither_fs_palette_rgba16_to_rgba8(
             }
         }
 
-        // перенос next -> current
+        // next -> current
         std::mem::swap(&mut er0, &mut er1);
         std::mem::swap(&mut eg0, &mut eg1);
         std::mem::swap(&mut eb0, &mut eb1);
@@ -202,7 +197,7 @@ pub fn dither_ordered_levels_rgba16_to_rgba8(
         for x in 0..w {
             let p = (y * w + x) * 4;
 
-            // порог 0..1
+            // step 0..1
             let t = (BAYER8[y & 7][x & 7] as f32 + 0.5) / 64.0;
 
             for c in 0..4 {
@@ -241,7 +236,7 @@ pub fn dither_ordered_levels_rgba8_inplace(
         for x in 0..w {
             let p = (y * w + x) * 4;
 
-            // порог 0..1
+            // step 0..1
             let t = (BAYER8[y & 7][x & 7] as f32 + 0.5) / 64.0;
 
             for c in 0..4 {
@@ -262,9 +257,9 @@ pub fn dither_ordered_levels_rgba8_inplace(
 }
 
 
-/// Nearest resize для interleaved пикселей: [c0,c1,c2,(c3), c0,c1,c2,(c3), ...]
-/// T: u8 или u16
-/// C: количество каналов (3=RGB, 4=RGBA)
+/// Nearest resize for interleaved pixelx: [c0,c1,c2,(c3), c0,c1,c2,(c3), ...]
+/// T: u8 or u16
+/// C: channel size (3=RGB, 4=RGBA)
 pub fn resize_interleaved_nearest<T: Copy + Default, const C: usize>(
     src: &[T],
     w: usize,

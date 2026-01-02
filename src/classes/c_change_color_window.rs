@@ -37,10 +37,10 @@ impl UIWidget for ColorReplaceWindow {
                 .show(ctx, |ui|{
                     ui.label("Replace selected palette color with:");
 
-                    // Текущий выбранный цвет (как Color32)
+                    // current selected color
                     let mut new_c32 = rgb16_to_color32(self.end_color);
 
-                    // Кнопка с color picker'ом
+                    // color picker
                     ui.color_edit_button_srgba(&mut new_c32);
 
 

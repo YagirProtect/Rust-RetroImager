@@ -39,7 +39,7 @@ impl PaletteMenu {
 impl UIWidget for PaletteMenu {
     fn update(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::bottom("PaletteMenu").show(ctx, |ui| {
-            let swatch = egui::vec2(18.0, 18.0); // размер квадратика
+            let swatch = egui::vec2(18.0, 18.0); // rect
             let rounding = egui::Rounding::same(1.0 as u8);
 
             ui.horizontal_wrapped(|ui| {
@@ -75,10 +75,8 @@ impl UIWidget for PaletteMenu {
                     }
 
                     let col = Color32::from_rgb(u16_to_u8(c.r), u16_to_u8(c.g), u16_to_u8(c.b));
-                    // заливка
                     ui.painter().rect_filled(rect, rounding, col);
-
-                    // обводка (чтобы на тёмном фоне было видно)
+                    
                     ui.painter().rect_stroke(
                         rect,
                         rounding,

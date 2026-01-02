@@ -97,11 +97,10 @@ impl DitheredImage {
             }
         };
 
-        // 1) Декодим ОДИН раз в RGBA8
         let rgba8_full = img.to_rgba8();
         let (w0, h0) = rgba8_full.dimensions();
 
-        // 2) Pure texture (оригинал)
+        // 2) Pure texture
         set_texture(
             &mut self.texPure,
             ctx,
@@ -111,8 +110,6 @@ impl DitheredImage {
             rgba8_full.as_raw(),
         );
 
-        // 3) Ресайзим ТОЛЬКО RGBA8
-        // ВАЖНО: scale должен быть 0.5, 1.0 и т.д. (если у тебя проценты — дели на 100.0)
         let scale = config.image_percent; // например 0.5
         let (resized8, nw, nh) = resize_interleaved_nearest::<u8, 4>(
             rgba8_full.as_raw(),
@@ -125,10 +122,8 @@ impl DitheredImage {
         self.w = nw;
         self.h = nh;
 
-        // 4) Дешево делаем RGBA16 уже на уменьшенном изображении
         rgba8_to_rgba16(&self.image_bytes8, &mut self.image_bytes16);
 
-        // 5) Texture для отображения уменьшенного
         set_texture(
             &mut self.tex,
             ctx,
@@ -141,7 +136,6 @@ impl DitheredImage {
         self.last_path_buff = Some(path.clone());
         self.is_loaded = true;
 
-        // 6) Дизеринг (самый тяжёлый этап)
         self.dither(ctx, config, from_open_file);
     }
     pub fn has_image(&self) -> bool {
@@ -215,7 +209,6 @@ impl DitheredImage {
 
         self.palette_override[palette_id] = new_color;
 
-        // пересобрать dithered из pure + override
         self.apply_palette_override_to_dithered(ctx);
     }
     pub fn get_palette_colors(&self) -> &Vec<Rgb16> {
@@ -226,7 +219,6 @@ impl DitheredImage {
     }
 
     fn apply_palette_override_to_dithered(&mut self, ctx: &egui::Context) {
-        // защиты
         if self.image_bytes8_dithered_pure.len() != self.w * self.h * 4 {
             return;
         }
@@ -234,18 +226,15 @@ impl DitheredImage {
             return;
         }
         if self.palette_override.len() != self.palette.len() {
-            // если ещё не инициализирована — делаем дефолт "как палитра"
             self.palette_override = self.palette.clone();
         }
 
-        // LUT: базовый цвет (RGB u8) -> id палитры
         let mut lut: HashMap<u32, usize> = HashMap::with_capacity(self.palette.len() * 2);
         for (i, &c16) in self.palette.iter().enumerate() {
             let (r, g, b) = rgb16_to_u8_exact(c16);
             lut.insert(pack_rgb(r, g, b), i);
         }
 
-        // подготовим dst
         self.image_bytes8_dithered.resize(self.w * self.h * 4, 0);
 
         let src = &self.image_bytes8_dithered_pure;
@@ -262,9 +251,9 @@ impl DitheredImage {
                 dst[p] = nr;
                 dst[p + 1] = ng;
                 dst[p + 2] = nb;
-                dst[p + 3] = pa; // альфу оставляем как в pure
+                dst[p + 3] = pa; 
             } else {
-                // На всякий случай: если цвет не найден — копируем как есть
+             
                 dst[p] = pr;
                 dst[p + 1] = pg;
                 dst[p + 2] = pb;
@@ -272,7 +261,6 @@ impl DitheredImage {
             }
         }
 
-        // обновляем текстуру
         let img = egui::ColorImage::from_rgba_unmultiplied([self.w, self.h], &self.image_bytes8_dithered);
         match &mut self.texDithered {
             Some(tex) => tex.set(img, egui::TextureOptions::NEAREST),
