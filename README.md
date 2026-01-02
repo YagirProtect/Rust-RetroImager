@@ -11,12 +11,10 @@ This project is a practical playground for Rust + realtime-ish image processing 
 ## Screenshots
 
 <p float="left">
-  <img src="/screenshots/Screenshot_1.png" width="49%" />
+  <img src="/assets/Screenshot_1.png" width="49%" />
   -
-  <img src="/screenshots/Screenshot_2.png" width="49%" />
+  <img src="/assets/Screenshot_2.png" width="49%" />
 </p>
-
-> Put your screenshots into `/screenshots/` and update the filenames above.
 
 ---
 
